@@ -1,0 +1,4 @@
+{
+  "watch": ["server.js", "routes", "controllers", "models"],
+  "ignore": ["../client", "public", "node_modules"]
+}
