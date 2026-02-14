@@ -1191,10 +1191,6 @@ exports.getProfile = async (req, res) => {
     const user = await User.findById(req.user.id)
       .populate('pickupStation', 'name address city state postalCode coordinates operatingHours capacity');
     
-    // Add debug logging
-    console.log('Profile request for user:', user.email);
-    console.log('User pickup station:', user.pickupStation);
-    
     res.json({
       success: true,
       data: {
@@ -2033,7 +2029,7 @@ exports.setupAgentPassword = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Password setup successful. Welcome to Vinsky!',
+      message: 'Password setup successful. Welcome to CessPlug!',
       data: {
         token: authToken,
         user: {

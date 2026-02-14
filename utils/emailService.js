@@ -90,11 +90,11 @@ const sendAgentSetupEmail = async (email, token, name, pickupStation) => {
     const response = await axios.post('https://api.resend.com/emails', {
       from: 'CessPlug <support@cessplug.com>',
       to: email,
-      subject: 'Welcome to Vinsky - Complete Your Agent Account Setup',
+      subject: 'Welcome to CessPlug - Complete Your Agent Account Setup',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #1f2937; font-size: 28px; margin-bottom: 10px;">Welcome to Vinsky!</h1>
+            <h1 style="color: #1f2937; font-size: 28px; margin-bottom: 10px;">Welcome to CessPlug!</h1>
             <p style="color: #6b7280; font-size: 16px;">Delivery Agent Platform</p>
           </div>
           

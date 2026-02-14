@@ -280,7 +280,46 @@ const userSchema = new mongoose.Schema({
   },
   lockUntil: {
     type: Date
-  }
+  },
+  
+  // NEW: Chama (group-based rotating purchase) fields
+  chamaGroups: [{
+    chamaGroupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ChamaGroup'
+    },
+    position: {
+      type: Number,
+      min: 1,
+      max: 10
+    },
+    joinedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  isChamaDefaulter: {
+    type: Boolean,
+    default: false
+  },
+  chamaDefaulterGroups: [{
+    chamaGroupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ChamaGroup'
+    },
+    reason: {
+      type: String,
+      enum: ['missed_contribution', 'failed_redemption_refund', 'other'],
+      default: 'missed_contribution'
+    },
+    markedAt: {
+      type: Date,
+      default: Date.now
+    },
+    resolvedAt: {
+      type: Date
+    }
+  }]
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

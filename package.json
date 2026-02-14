@@ -1,7 +1,7 @@
 {
-  "name": "vinsky-shopping-backend",
+  "name": "cessplug-backend",
   "version": "1.0.0",
-  "description": "Vinsky Shopping E-commerce Backend",
+  "description": "CessPlug E-commerce Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -39,6 +39,6 @@
     "express",
     "mongodb"
   ],
-  "author": "Vinsky Shopping",
+  "author": "CessPlug Shopping",
   "license": "MIT"
 }

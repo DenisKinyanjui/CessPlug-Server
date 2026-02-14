@@ -23,6 +23,7 @@ const uploadRoutes = require('./routes/uploadRoutes');
 const pickupStationRoutes = require('./routes/pickupStationRoutes');
 const commissionRoutes = require('./routes/commissionRoutes');
 const payoutSettingsRoutes = require('./routes/payoutSettingsRoutes');
+const chamaRoutes = require('./routes/chamaRoutes');
 
 const { validateConfig } = require('./services/mpesa');
 
@@ -41,11 +42,8 @@ const initializeApp = async () => {
         process.env.CLIENT_URL ||
         'http://127.0.0.1:3000', 
         'http://127.0.0.1:3001',
-        'http://127.0.0.1:3002',
-        'https://vinskyshopping.com',
-        'https://admin.vinskyshopping.com',
-        'https://agents.vinskyshopping.com',
-        'https://www.vinskyshopping.co.ke'
+        'https://cessplug.netlify.app',
+        'http://127.0.0.1:3002'
       ],
       credentials: true
     }));
@@ -96,11 +94,14 @@ const initializeApp = async () => {
     // General admin routes (must come AFTER specific admin routes)
     app.use('/api/admin', adminRoutes);
 
+    // NEW: Chama routes (handles /api/chamas/*)
+    app.use('/api/chamas', chamaRoutes);
+
     // Health check with updated route information
     app.get('/api/health', (req, res) => {
       res.json({ 
         status: 'OK', 
-        message: 'Vinsky Shopping API is running!',
+        message: 'CessPlug API is running!',
         database: 'Connected',
         timestamp: new Date().toISOString(),
         routes: {

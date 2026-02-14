@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const PickupStation = require('../models/PickupStation');
 const NodeCache = require('node-cache');
+const chamaService = require('../services/chamaService');
 const { 
   createDeliveryCommission, 
   createAgentOrderCommission, 
@@ -30,13 +31,18 @@ exports.createOrder = async (req, res) => {
       pickupInstructions,
       // NEW: Agent order fields
       customerInfo,
-      isAgentOrder = false
+      isAgentOrder = false,
+      // NEW: Chama redemption fields
+      chamaGroupId,
+      useChamaCredit = false
     } = req.body;
 
     console.log('Create order request body:', {
       orderItems: orderItems ? orderItems.length : 'undefined',
       customerInfo,
       isAgentOrder,
+      useChamaCredit,
+      chamaGroupId,
       userRole: req.user.role
     });
 
@@ -107,6 +113,30 @@ exports.createOrder = async (req, res) => {
       }
     }
 
+    // NEW: Validate chama redemption if requested
+    let chamaContext = null;
+    if (useChamaCredit && chamaGroupId) {
+      const eligibility = await chamaService.checkChamaEligibility(req.user._id, chamaGroupId);
+      
+      if (!eligibility.eligible) {
+        return res.status(403).json({
+          success: false,
+          message: eligibility.reason,
+          eligibilityDetails: eligibility
+        });
+      }
+
+      chamaContext = {
+        chamaGroupId,
+        eligible: true,
+        group: eligibility.group,
+        userPosition: eligibility.userPosition,
+        maxRedemptionAmount: eligibility.maxRedemptionAmount
+      };
+
+      console.log('Chama redemption validated for user:', req.user._id, 'Amount:', chamaContext.maxRedemptionAmount);
+    }
+
     // Find and assign agent if pickup station is specified
     let assignedAgent = null;
     if (pickupStation) {
@@ -168,6 +198,33 @@ exports.createOrder = async (req, res) => {
       } catch (commissionError) {
         console.error('Failed to create agent order commission:', commissionError);
         // Don't fail the order creation if commission creation fails
+      }
+    }
+
+    // NEW: Record chama redemption if applicable
+    if (chamaContext && useChamaCredit) {
+      try {
+        // Determine amount redeemed vs amount paid outside chama
+        let amountRedeemed = Math.min(totalPrice, chamaContext.maxRedemptionAmount);
+        let amountOutsideChama = totalPrice - amountRedeemed;
+
+        await chamaService.createChamaRedemption({
+          userId: req.user._id,
+          chamaGroupId: chamaContext.chamaGroupId,
+          orderId: order._id,
+          weekNumber: chamaContext.group.currentWeek,
+          amountRedeemed,
+          amountOutsideChama,
+          notes: `Order redemption via chama group ${chamaContext.group.name}`
+        });
+
+        console.log('Chama redemption recorded for order:', order._id, {
+          amountRedeemed,
+          amountOutsideChama
+        });
+      } catch (chamaError) {
+        console.error('Failed to record chama redemption:', chamaError);
+        // Don't fail the order creation if chama recording fails
       }
     }
 
