@@ -43,6 +43,7 @@ const initializeApp = async () => {
         'http://127.0.0.1:3000', 
         'http://127.0.0.1:3001',
         'https://cessplug.netlify.app',
+        'https://cessplugadmin.netlify.app',
         'http://127.0.0.1:3002'
       ],
       credentials: true
