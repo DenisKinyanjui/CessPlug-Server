@@ -18,77 +18,131 @@ exports.register = async (req, res) => {
     console.log('Register request received:', { name, email, phone });
 
     // Validate required fields
-    if (!name || !email || !password || !phone) {
+    // PHONE VERIFICATION DISABLED: phone removed from required fields
+    if (!name || !email || !password) { // was: if (!name || !email || !password || !phone)
       return res.status(400).json({
         success: false,
         message: 'Please provide all required fields'
       });
     }
 
-    // Validate phone number format
-    if (!smsService.validatePhoneNumber(phone)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide a valid phone number'
-      });
-    }
+    // PHONE VERIFICATION DISABLED: phone format validation commented out
+    // if (!smsService.validatePhoneNumber(phone)) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Please provide a valid phone number'
+    //   });
+    // }
 
     // Check if user already exists (only check ACTIVE users)
-    const existingUser = await User.findOne({ 
-      $or: [
-        { email: email.toLowerCase(), isActive: true }, 
-        { phone, isActive: true }
-      ] 
+    // PHONE VERIFICATION DISABLED: phone removed from duplicate check
+    const existingUser = await User.findOne({
+      email: email.toLowerCase(), isActive: true
+      // $or: [
+      //   { email: email.toLowerCase(), isActive: true },
+      //   { phone, isActive: true }
+      // ]
     });
-    
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User with this email or phone number already exists'
+        message: 'User with this email already exists'
       });
     }
 
-    // Check if there's a soft-deleted user with same email or phone
-    const softDeletedUser = await User.findOne({ 
-      $or: [{ email: email.toLowerCase() }, { phone }],
+    // Check if there's a soft-deleted user with same email
+    // PHONE VERIFICATION DISABLED: phone removed from soft-delete check
+    const softDeletedUser = await User.findOne({
+      email: email.toLowerCase(),
+      // $or: [{ email: email.toLowerCase() }, { phone }],
       isActive: false
     });
 
     if (softDeletedUser) {
-      console.log(`Found soft-deleted user for ${email || phone}, will reactivate after verification`);
+      console.log(`Found soft-deleted user for ${email}, will reactivate`);
     }
 
+    // PHONE VERIFICATION DISABLED: OTP temp record creation commented out
     // Store user data temporarily in OtpVerification for later use
     // Delete any existing records for this phone/email
-    await OtpVerification.deleteMany({ 
-      $or: [{ phone }, { email: email.toLowerCase() }] 
-    });
+    // await OtpVerification.deleteMany({
+    //   $or: [{ phone }, { email: email.toLowerCase() }]
+    // });
 
     // Create a temporary record to store user data (without OTP yet)
-    const tempRecord = await OtpVerification.create({
-      phone,
-      otp: '000000', // Placeholder, will be updated when OTP is sent
-      email: email.toLowerCase(),
-      userData: { 
-        name: name.trim(), 
-        email: email.toLowerCase(), 
-        password, 
-        phone 
-      },
-      isReactivation: !!softDeletedUser,
-      existingUserId: softDeletedUser?._id,
-      verified: false
-    });
+    // const tempRecord = await OtpVerification.create({
+    //   phone,
+    //   otp: '000000', // Placeholder, will be updated when OTP is sent
+    //   email: email.toLowerCase(),
+    //   userData: {
+    //     name: name.trim(),
+    //     email: email.toLowerCase(),
+    //     password,
+    //     phone
+    //   },
+    //   isReactivation: !!softDeletedUser,
+    //   existingUserId: softDeletedUser?._id,
+    //   verified: false
+    // });
 
     // Return success - frontend will handle phone verification
-    res.status(200).json({
-      success: true,
-      message: 'Registration data validated successfully',
-      data: {
-        phone: phone,
-        email: email.toLowerCase(),
+    // res.status(200).json({
+    //   success: true,
+    //   message: 'Registration data validated successfully',
+    //   data: {
+    //     phone: phone,
+    //     email: email.toLowerCase(),
+    //     name: name.trim(),
+    //     tempId: tempRecord._id
+    //   }
+    // });
+
+    // PHONE VERIFICATION DISABLED: Directly create/reactivate user and return token
+    let user;
+
+    if (softDeletedUser) {
+      user = await User.findByIdAndUpdate(
+        softDeletedUser._id,
+        {
+          name: name.trim(),
+          email: email.toLowerCase(),
+          password,
+          phone: phone || '',
+          isActive: true,
+          verified: true,
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
+      console.log(`Reactivated soft-deleted user: ${email}`);
+    } else {
+      user = await User.create({
         name: name.trim(),
-        tempId: tempRecord._id
+        email: email.toLowerCase(),
+        password,
+        phone: phone || '',
+        verified: true,
+        isActive: true
+      });
+      console.log(`Created new user: ${email}`);
+    }
+
+    const token = user.getSignedJwtToken();
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully',
+      data: {
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          phone: user.phone,
+          verified: user.verified
+        },
+        token
       }
     });
 

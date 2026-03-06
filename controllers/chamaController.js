@@ -243,6 +243,86 @@ exports.addMemberToChamaGroup = async (req, res) => {
 };
 
 /**
+ * @desc    Update a member's position in a chama group
+ * @route   PUT /api/admin/chamas/:id/members/:userId
+ * @access  Private/Admin
+ */
+exports.updateMemberPosition = async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    const { position } = req.body;
+
+    if (!position) {
+      return res.status(400).json({
+        success: false,
+        message: 'Position is required'
+      });
+    }
+
+    const chamaGroup = await ChamaGroup.findById(id);
+    if (!chamaGroup) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chama group not found'
+      });
+    }
+
+    // Cannot edit members of an active group
+    if (chamaGroup.status === 'active') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot change positions in an active chama group'
+      });
+    }
+
+    // Check if position is already taken by another member
+    const positionTaken = chamaGroup.members.some(
+      m => m.position === position && m.userId.toString() !== userId
+    );
+    if (positionTaken) {
+      return res.status(400).json({
+        success: false,
+        message: `Position ${position} is already taken by another member`
+      });
+    }
+
+    const member = chamaGroup.members.find(m => m.userId.toString() === userId);
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found in this chama group'
+      });
+    }
+
+    member.position = position;
+    await chamaGroup.save();
+
+    // Update position in user's chamaGroups array as well
+    const user = await User.findById(userId);
+    if (user && user.chamaGroups) {
+      const userGroup = user.chamaGroups.find(
+        g => g.chamaGroupId.toString() === id
+      );
+      if (userGroup) {
+        userGroup.position = position;
+        await user.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Member position updated successfully',
+      data: chamaGroup
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
  * @desc    Remove member from chama group (before activation)
  * @route   DELETE /api/admin/chamas/:id/members/:userId
  * @access  Private/Admin

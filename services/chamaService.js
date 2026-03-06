@@ -29,7 +29,7 @@ exports.checkChamaEligibility = async (userId, chamaGroupId) => {
     }
 
     // Check if user is a member
-    const memberInfo = chamaGroup.members.find(m => m.userId._id.toString() === userId);
+    const memberInfo = chamaGroup.members.find(m => m.userId._id.toString() === userId.toString());
     if (!memberInfo) {
       return {
         eligible: false,

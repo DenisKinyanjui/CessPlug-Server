@@ -37,9 +37,9 @@ router.post('/admin/chamas/:id/mark-contribution', protect, admin, markContribut
 router.post('/admin/chamas/:id/next-turn', protect, admin, rotateToNextTurn);
 
 // ============ USER ROUTES ============
-router.get('/chamas/my', protect, getUserChamaGroups);
-router.get('/chamas/:id', protect, getChamaGroupDetails);
-router.get('/chamas/:id/eligibility', protect, checkEligibility);
-router.get('/chamas/:id/redemptions', protect, getRedemptionHistory);
+router.get('/my', protect, getUserChamaGroups);
+router.get('/:id', protect, getChamaGroupDetails);
+router.get('/:id/eligibility', protect, checkEligibility);
+router.get('/:id/redemptions', protect, getRedemptionHistory);
 
 module.exports = router;

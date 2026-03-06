@@ -27,6 +27,19 @@ const {
   getAgentStatistics,
   getAgentOrdersList
 } = require('../controllers/agentController');
+const {
+  createChamaGroup,
+  getAllChamaGroups,
+  getChamaGroup,
+  getChamaStats,
+  addMemberToChamaGroup,
+  updateMemberPosition,
+  removeMemberFromChamaGroup,
+  activateChamaGroup,
+  pauseChamaGroup,
+  markContributionPaid,
+  rotateToNextTurn
+} = require('../controllers/chamaController');
 const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
@@ -69,5 +82,19 @@ router.delete('/agents/:id', deleteAgent);
 // NEW: Agent statistics and orders routes
 router.get('/agents/:id/stats', getAgentStatistics);
 router.get('/agents/:id/orders', getAgentOrdersList);
+
+// Chama management routes
+router.post('/chamas', createChamaGroup);
+router.get('/chamas/stats', getChamaStats);
+router.get('/chamas', getAllChamaGroups);
+router.get('/chamas/:id', getChamaGroup);
+router.post('/chamas/:id/add-member', addMemberToChamaGroup);
+router.put('/chamas/:id/members/:userId', updateMemberPosition);
+router.delete('/chamas/:id/members/:userId', removeMemberFromChamaGroup);
+router.delete('/chamas/:id/remove-member/:userId', removeMemberFromChamaGroup);
+router.post('/chamas/:id/activate', activateChamaGroup);
+router.post('/chamas/:id/pause', pauseChamaGroup);
+router.post('/chamas/:id/mark-contribution', markContributionPaid);
+router.post('/chamas/:id/next-turn', rotateToNextTurn);
 
 module.exports = router;
