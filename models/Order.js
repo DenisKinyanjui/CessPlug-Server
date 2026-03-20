@@ -152,6 +152,19 @@ const orderSchema = new mongoose.Schema({
       return this.createdBy === 'agent';
     }
   },
+  // NEW: Chama credit fields
+  useChamaCredit: {
+    type: Boolean,
+    default: false
+  },
+  chamaGroupId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ChamaGroup'
+  },
+  chamaAmountRedeemed: {
+    type: Number,
+    default: 0
+  },
   // NEW: Customer info for agent-created orders
   customerInfo: {
     name: {

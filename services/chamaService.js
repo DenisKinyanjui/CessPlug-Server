@@ -64,13 +64,47 @@ exports.checkChamaEligibility = async (userId, chamaGroupId) => {
       }
     }
 
-    // User is eligible
+    // Check existing redemptions for this user in the current turn
+    const existingRedemptions = await ChamaRedemption.find({
+      userId,
+      chamaGroupId,
+      weekNumber: chamaGroup.currentWeek,
+      status: { $in: ['completed', 'pending'] }
+    });
+
+    const totalAllowance = chamaGroup.weeklyContribution * chamaGroup.members.length;
+    const recordedRedeemed = existingRedemptions.reduce((sum, r) => sum + r.amountRedeemed, 0);
+
+    // Guard: if a completed record exists but its amount is 0 (stale data from a prior bug),
+    // treat the full allowance as already consumed so the user cannot double-redeem.
+    const hasCompletedRedemption = existingRedemptions.some(r => r.status === 'completed');
+    const totalAlreadyRedeemed = (hasCompletedRedemption && recordedRedeemed === 0)
+      ? totalAllowance
+      : recordedRedeemed;
+
+    const remainingAmount = totalAllowance - totalAlreadyRedeemed;
+
+    if (remainingAmount <= 0) {
+      return {
+        eligible: false,
+        reason: 'You have already redeemed all your chama credit for this turn',
+        group: chamaGroup,
+        userPosition: memberInfo.position,
+        alreadyRedeemed: totalAlreadyRedeemed,
+        maxRedemptionAmount: 0,
+        totalAllowance
+      };
+    }
+
+    // User is eligible – return remaining redeemable amount
     return {
       eligible: true,
       reason: 'User is eligible to redeem',
       group: chamaGroup,
       userPosition: memberInfo.position,
-      maxRedemptionAmount: chamaGroup.weeklyContribution
+      maxRedemptionAmount: remainingAmount,
+      alreadyRedeemed: totalAlreadyRedeemed,
+      totalAllowance
     };
   } catch (error) {
     return {

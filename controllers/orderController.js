@@ -164,7 +164,10 @@ exports.createOrder = async (req, res) => {
       pickupInstructions: pickupInstructions || '',
       createdBy,
       agentId: createdBy === 'agent' ? req.user.id : undefined,
-      customerInfo: createdBy === 'agent' ? customerInfo : undefined
+      customerInfo: createdBy === 'agent' ? customerInfo : undefined,
+      useChamaCredit: !!chamaContext,
+      chamaGroupId: chamaContext ? chamaContext.chamaGroupId : undefined,
+      chamaAmountRedeemed: chamaContext ? Math.min(itemsPrice, chamaContext.maxRedemptionAmount) : 0
     };
 
     // Add pickup-specific fields if applicable
@@ -204,9 +207,11 @@ exports.createOrder = async (req, res) => {
     // NEW: Record chama redemption if applicable
     if (chamaContext && useChamaCredit) {
       try {
-        // Determine amount redeemed vs amount paid outside chama
-        let amountRedeemed = Math.min(totalPrice, chamaContext.maxRedemptionAmount);
-        let amountOutsideChama = totalPrice - amountRedeemed;
+        // itemsPrice = original order total; totalPrice = remaining after chama deduction (0 for full chama)
+        // amountRedeemed = how much chama credit was actually used
+        // amountOutsideChama = what the user still pays via M-Pesa (i.e. totalPrice)
+        let amountRedeemed = Math.min(itemsPrice, chamaContext.maxRedemptionAmount);
+        let amountOutsideChama = totalPrice;
 
         await chamaService.createChamaRedemption({
           userId: req.user._id,
